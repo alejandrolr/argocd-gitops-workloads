@@ -1,0 +1,63 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: workload-nginx
+spec:
+  syncPolicy:
+    preserveResourcesOnDeletion: false
+  generators:
+    - merge:
+        mergeKeys: [server]
+        generators:
+          - clusters:
+              values:
+                workloadChart: nginx
+                # anything not staging or prod use this version
+                workloadChartVersion: 18.3.5
+                workloadChartRepositoryNamespace: nginx
+                workloadChartRepository: registry-1.docker.io/bitnamicharts
+              selector:
+                matchExpressions:
+                  - key: akuity.io/argo-cd-cluster-name
+                    operator: NotIn
+                    values: [in-cluster]
+          - clusters:
+              selector:
+                matchLabels:
+                  environment: staging
+              values:
+                workloadChartVersion: 1.5.0
+          - clusters:
+              selector:
+                matchLabels:
+                  environment: prod
+              values:
+                workloadChartVersion: 1.5.0
+  template:
+    metadata:
+      name: workload-{{name}}-{{values.workloadChart}}
+    spec:
+      project: default
+      sources:
+        - repoURL: '{{metadata.annotations.workload_repo_url}}'
+          targetRevision: '{{metadata.annotations.workload_repo_revision}}'
+          ref: values
+        - repoURL: '{{values.workloadChartRepository}}'
+          path: '{{values.workloadChartPath}}'
+          targetRevision: '{{metadata.annotations.workload_repo_revision}}'
+          helm:
+            releaseName: '{{values.workloadChart}}'
+            ignoreMissingValueFiles: true
+            valueFiles:
+              - $values/{{metadata.annotations.workload_repo_basepath}}environments/default/workloads/{{values.workloadChart}}/values.yaml
+              - $values/{{metadata.annotations.workload_repo_basepath}}environments/{{metadata.labels.environment}}/workloads/{{values.workloadChart}}/values.yaml
+              - $values/{{metadata.annotations.workload_repo_basepath}}environments/clusters/{{name}}/workloads/{{values.workloadChart}}/values.yaml
+      destination:
+        namespace: '{{values.workloadChartRepositoryNamespace}}'
+        name: '{{name}}'
+      syncPolicy:
+        automated:
+          prune: false
+        syncOptions:
+          - CreateNamespace=true
