@@ -45,7 +45,7 @@ spec:
           ref: values
         - chart: '{{values.workloadChart}}'
           repoURL: '{{values.workloadChartRepository}}'
-          targetRevision: '{{metadata.annotations.workload_repo_revision}}'
+          targetRevision: '{{values.workloadChartVersion}}'
           helm:
             releaseName: '{{values.workloadChart}}'
             ignoreMissingValueFiles: true
