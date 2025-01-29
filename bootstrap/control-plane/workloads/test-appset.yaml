@@ -16,7 +16,7 @@ spec:
                 # anything not staging or prod use this version
                 workloadChartVersion: 18.3.5
                 workloadChartRepositoryNamespace: nginx
-                workloadChartRepository: https://charts.bitnami.com/bitnami
+                workloadChartRepository: registry-1.docker.io/bitnamicharts
               selector:
                 matchExpressions:
                   - key: akuity.io/argo-cd-cluster-name
