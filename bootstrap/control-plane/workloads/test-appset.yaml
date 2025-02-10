@@ -7,36 +7,50 @@ spec:
   syncPolicy:
     preserveResourcesOnDeletion: false
   generators:
-    - merge:
-        mergeKeys: [server]
-        generators:
-          - clusters:
-              values:
-                workloadChart: nginx
-                # anything not staging or prod use this version
-                workloadChartVersion: 18.3.5
-                workloadChartRepositoryNamespace: nginx
-                workloadChartRepository: registry-1.docker.io/bitnamicharts
-              selector:
-                matchExpressions:
-                  - key: akuity.io/argo-cd-cluster-name
-                    operator: NotIn
-                    values: [in-cluster]
-          - clusters:
-              selector:
-                matchLabels:
-                  environment: staging
-              values:
-                workloadChartVersion: 1.5.0
-          - clusters:
-              selector:
-                matchLabels:
-                  environment: prod
-              values:
-                workloadChartVersion: 1.5.0
+    - clusters:
+        selector:
+          matchLabels:
+            environment: dev
+        values:
+          workloadChart: nginx
+          # anything not staging or prod use this version
+          workloadChartVersion: 18.3.5
+          workloadApplicationName: nginx-dev
+          workloadChartRepositoryNamespace: nginx-dev
+          workloadChartRepository: registry-1.docker.io/bitnamicharts
+    - clusters:
+        selector:
+          matchLabels:
+            environment: dev
+        values:
+          workloadChart: nginx
+          workloadApplicationName: nginx-qa
+          workloadChartVersion: 18.3.5
+          workloadChartRepositoryNamespace: nginx-qa
+          workloadChartRepository: registry-1.docker.io/bitnamicharts
+    - clusters:
+        selector:
+          matchLabels:
+            environment: staging
+        values:
+          workloadChart: nginx
+          workloadApplicationName: nginx
+          workloadChartVersion: 18.3.5
+          workloadChartRepositoryNamespace: nginx
+          workloadChartRepository: registry-1.docker.io/bitnamicharts
+    - clusters:
+        selector:
+          matchLabels:
+            environment: prod
+        values:
+          workloadChart: nginx
+          workloadApplicationName: nginx
+          workloadChartVersion: 18.3.5
+          workloadChartRepositoryNamespace: nginx
+          workloadChartRepository: registry-1.docker.io/bitnamicharts
   template:
     metadata:
-      name: workload-{{name}}-{{values.workloadChart}}
+      name: workload-{{name}}-{{values.workloadApplicationName}}
     spec:
       project: default
       sources:
@@ -51,8 +65,8 @@ spec:
             ignoreMissingValueFiles: true
             valueFiles:
               - $values/{{metadata.annotations.workload_repo_basepath}}environments/default/workloads/{{values.workloadChart}}/values.yaml
-              - $values/{{metadata.annotations.workload_repo_basepath}}environments/{{metadata.labels.environment}}/workloads/{{values.workloadChart}}/values.yaml
-              - $values/{{metadata.annotations.workload_repo_basepath}}environments/clusters/{{name}}/workloads/{{values.workloadChart}}/values.yaml
+              - $values/{{metadata.annotations.workload_repo_basepath}}environments/{{metadata.labels.environment}}/workloads/{{values.workloadChart}}/values.yaml # general values
+              - $values/{{metadata.annotations.workload_repo_basepath}}environments/{{metadata.labels.environment}}/workloads/{{values.workloadChart}}/{{values.workloadApplicationName}}.yaml # multi app per cluster
       destination:
         namespace: '{{values.workloadChartRepositoryNamespace}}'
         name: '{{name}}'

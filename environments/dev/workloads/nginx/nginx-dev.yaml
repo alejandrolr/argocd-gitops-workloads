@@ -1,0 +1,3 @@
+extraEnvVars:
+  - name: ENV
+    value: DEV
